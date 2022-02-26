@@ -1,51 +1,41 @@
-import React, {useState} from 'react';
-import { StyleSheet, Text, View, FlatList, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import { StyleSheet, Text, View, FlatList, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
 import AddList from './components/addList';
 import Header from './components/header';
 import TodoItem from './components/todoItem';
 
 export default function App() {
-  const [listings, setListings] = useState([
-    { name: 'Oregon', key: '1' },
-    { name: 'Arizona', key: '2' },
-    { name: 'California', key: '3' },
-    { name: 'Texas', key: '4' }
-  ]);
+  const [isLoading, setLoading] = useState(true);
+  const [data, setData] = useState([]);
 
-  const pressHandler = (key) => {
-    setListings((prevListings) => {
-      return prevListings.filter(list => list.key != key);
-    });
+  const getListings = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/listingsAndReviews/v1/listings');
+      const json = await response.json();
+      setData(json);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const submitHandler = (name) => {
-      setListings((prevListings) => {
-        return [
-          { name: name, key: Math.random().toString() },
-          ...prevListings
-        ];
-      }); 
-  }
+  useEffect(() => {
+    getListings();
+  }, []);
 
   return (
-      <View style={styles.container}>
-      <Header />
-      <View style={styles.content}>
-        <Text style={styles.boldText}>Add Listing</Text>
-        <AddList submitHandler={submitHandler}/>
-        <Text style={styles.boldText}>Show Listings</Text>
-        <View style={styles.list}>
-          <FlatList
-          data={listings}
+    <View style={{ flex: 1, padding: 24 }}>
+      {isLoading ? <ActivityIndicator/> : (
+        <FlatList
+          data={data}
+          keyExtractor={({ id }, index) => id}
           renderItem={({ item }) => (
-            <TodoItem item={item} pressHandler={pressHandler}/>
+            <Text>{item.name}</Text>
           )}
-          />
-        </View>
-      </View>
+        />
+      )}
     </View>
-
-
   );
 }
 
@@ -59,6 +49,8 @@ const styles = StyleSheet.create({
   },
   list: {
     marginTop: 20,
+    flex: 1,
+    padding: 24,
   },
   boldText: {
     fontWeight: 'bold',
